@@ -23,13 +23,17 @@ introtab <- menuItem("Welcome to My App", tabName = "Welcome")
 topictab <- menuItem("Time Series of Topic", tabName = "TopicPlot")
 choosetab <- menuItem("Aspects of Series", tabName = "Choose")
 forecasttab <- menuItem("Simple Forecast", tabName = "SimpleForecast")
+exponentialtab <- menuItem("Exponential Forecast", tabName = "ExponentialForecast")
+arimatab <- menuItem("ARIMA Forecast", tabName = "ArimaForecast")
 
 
 sidebar <- dashboardSidebar(sidebarMenu(
   introtab,
   topictab,
   choosetab,
-  forecasttab
+  forecasttab,
+  exponentialtab,
+  arimatab
 ))
 
 body <- dashboardBody(tabItems(
@@ -69,15 +73,57 @@ body <- dashboardBody(tabItems(
   ),
   tabItem(
     tabName = "SimpleForecast",
-    h2("Select a forecast model from the drop down box.  The options are Naive, Mean, Seasonal Naive, and Drift.
+    h2("Select a simple forecast model from the drop down box.  The options are Naive, Mean, Seasonal Naive, and Drift.
        A plot showing that forecast will then appear"),
     selectInput(
-      inputId = "SimpleForecast",
-      label = "Choose a component to see plotted",
+      inputId = "SimpleForecastChoice",
+      label = "Choose a model to see plotted",
       choices = list("Naive", "Mean", "Seasonal Naive", "Drift"),
       selected = 1
     ),
-    plotOutput("simpleforecast")
+    plotOutput("simpleforecastPlot")
+  ),
+  tabItem(
+    tabName = "ExponentialForecast",
+    h2("Select an exponential forecast model from the drop down box.  The options are Holts and Holts/Winters.
+       A plot showing that forecast will then appear"),
+    selectInput(
+      inputId = "ExponentialForecastChoice",
+      label = "Choose a model to see plotted",
+      choices = list("Holts", "Holts/Winter"),
+      selected = 1
+    ),
+    plotOutput("ExponentialforecastPlot")
+  ),
+  tabItem(
+    tabName = "ArimaForecast",
+    h2("Select an ARIMA forecast model from the drop down box.  The options are Auto and manual. If manual, you will have to select the
+      3 parameters. A plot showing that forecast will then appear"),
+    selectInput(
+      inputId = "ArimaForecastChoice",
+      label = "Choose a Model to see plotted. If manual, also select the three parameters.",
+      choices = list("Auto", "Manual"),
+      selected = 1
+    ),
+    selectInput(
+      inputId = "Parameter1",
+      label = "If manual, select parameter 1",
+      choices = list("0", "1", "2"),
+      selected = 1
+    ),
+    selectInput(
+      inputId = "Parameter2",
+      label = "If manual, select parameter 2",
+      choices = list("0", "1"),
+      selected = 1
+    ),
+    selectInput(
+      inputId = "Parameter3",
+      label = "If manual, select parameter 3",
+      choices = list("0", "1", "2"),
+      selected = 1
+    ),
+    plotOutput("ArimaforecastPlot")
   )
 ))
 
@@ -114,12 +160,12 @@ server <- function(input, output) {
   })
 
 
-  output$simpleforecast <- renderPlot({
+  output$simpleforecastPlot <- renderPlot({
     sales <- souvenirs %>%
       filter_index("1987 Jan" ~ "1991 Dec") %>%
       select(Sales)
 
-    if (input$SimpleForecast == "Naive") {
+    if (input$SimpleForecastChoice == "Naive") {
       sales_fit <- sales %>%
         model(
           `Naïve` = NAIVE(Sales)
@@ -138,7 +184,7 @@ server <- function(input, output) {
           title = "Forecasts for monthly souvenir sales"
         ) +
         guides(colour = guide_legend(title = "Forecast"))
-    } else if (input$SimpleForecast == "Mean") {
+    } else if (input$SimpleForecastChoice == "Mean") {
       sales_fit <- sales %>%
         model(
           Mean = MEAN(Sales)
@@ -157,7 +203,7 @@ server <- function(input, output) {
           title = "Forecasts for monthly souvenir sales"
         ) +
         guides(colour = guide_legend(title = "Forecast"))
-    } else if (input$SimpleForecast == "Seasonal Naive") {
+    } else if (input$SimpleForecastChoice == "Seasonal Naive") {
       sales_fit <- sales %>%
         model(
           `Seasonal naïve` = SNAIVE(Sales)
@@ -184,6 +230,98 @@ server <- function(input, output) {
 
       sales_fc <- sales_fit %>% forecast(h = 24)
 
+      sales_fc %>%
+        autoplot(sales, level = NULL) +
+        autolayer(
+          filter_index(souvenirs, "1992 Jan" ~ "1993 Dec"),
+          colour = "black"
+        ) +
+        labs(
+          y = "Australian Dollars",
+          title = "Forecasts for monthly souvenir sales"
+        ) +
+        guides(colour = guide_legend(title = "Forecast"))
+    }
+  })
+  
+  output$ExponentialforecastPlot <- renderPlot({
+    sales <- souvenirs %>%
+      filter_index("1987 Jan" ~ "1991 Dec") %>%
+      select(Sales)
+    
+    if (input$ExponentialForecastChoice == "Holts") {
+      sales_fit <- sales %>%
+        model(
+          Holts = ETS(Sales ~ error("A") + trend("A") + season("N"))
+        )
+      
+      sales_fc <- sales_fit %>% forecast(h = 24)
+      
+      sales_fc %>%
+        autoplot(sales, level = NULL) +
+        autolayer(
+          filter_index(souvenirs, "1992 Jan" ~ "1993 Dec"),
+          colour = "black"
+        ) +
+        labs(
+          y = "Australian Dollars",
+          title = "Forecasts for monthly souvenir sales"
+        ) +
+        guides(colour = guide_legend(title = "Forecast"))
+    } else {
+      sales_fit <- sales %>%
+        model(
+          HoltsWinters = ETS(Sales~error("M") + trend("A") + season("M"))
+        )
+      
+      sales_fc <- sales_fit %>% forecast(h = 24)
+      
+      sales_fc %>%
+        autoplot(sales, level = NULL) +
+        autolayer(
+          filter_index(souvenirs, "1992 Jan" ~ "1993 Dec"),
+          colour = "black"
+        ) +
+        labs(
+          y = "Australian Dollars",
+          title = "Forecasts for monthly souvenir sales"
+        ) +
+        guides(colour = guide_legend(title = "Forecast"))
+    }
+  })
+  
+  output$ArimaforecastPlot <- renderPlot({
+    sales <- souvenirs %>%
+      filter_index("1987 Jan" ~ "1991 Dec") %>%
+      select(Sales)
+    
+    if (input$ArimaForecastChoice == "Auto") {
+      sales_fit <- sales %>%
+        model(
+          Step = ARIMA(Sales, stepwise=TRUE)
+        )
+      
+      sales_fc <- sales_fit %>% forecast(h = 24)
+      
+      sales_fc %>%
+        autoplot(sales, level = NULL) +
+        autolayer(
+          filter_index(souvenirs, "1992 Jan" ~ "1993 Dec"),
+          colour = "black"
+        ) +
+        labs(
+          y = "Australian Dollars",
+          title = "Forecasts for monthly souvenir sales"
+        ) +
+        guides(colour = guide_legend(title = "Forecast"))
+    } else {
+      sales_fit <- sales %>%
+        model(
+          ManualArima = ARIMA(Sales ~ pdq(as.integer(input$Parameter1),as.integer(input$Parameter2),as.integer(input$Parameter3)))
+        )
+      
+      sales_fc <- sales_fit %>% forecast(h = 24)
+      
       sales_fc %>%
         autoplot(sales, level = NULL) +
         autolayer(
