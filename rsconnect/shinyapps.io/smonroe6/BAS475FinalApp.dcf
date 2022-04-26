@@ -1,0 +1,14 @@
+name: BAS475FinalApp
+title: BAS475FinalApp
+username:
+account: smonroe6
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6172001
+bundleId: 5836702
+url: https://smonroe6.shinyapps.io/BAS475FinalApp/
+when: 1650941289.87822
+lastSyncTime: 1650941289.87822
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .gitattributes|README.md

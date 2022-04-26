@@ -40,10 +40,12 @@ body <- dashboardBody(tabItems(
   tabItem(
     tabName = "Welcome",
     h1("Welcome!"),
-    h2("This app has 3 tabs with features."),
+    h2("This app has 5 tabs with features."),
     h3("1. A tab with a plot of monthly souvenir sales from a shop in Queensland, Australia from January 1987 to December 1993"),
     h3("2. A tab with the option to choose from seeing graphics that display seasonality, autocorrelation, or decomposition"),
-    h3("3. A tab that shows the sales forcast based on the forecast model that is selected.")
+    h3("3. A tab that shows the sales forcast based on a simple forecast model that is selected."),
+    h3("4. A tab that shows the sales forcast based on an exponential forecast model that is selected."),
+    h3("5. A tab that shows the sales forcast based on an ARIMA forecast model that is selected.")
   ),
   tabItem(
     tabName = "TopicPlot",
