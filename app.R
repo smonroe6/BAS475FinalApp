@@ -22,7 +22,7 @@ data("souvenirs")
 introtab <- menuItem("Welcome to My App", tabName = "Welcome")
 topictab <- menuItem("Time Series of Topic", tabName = "TopicPlot")
 choosetab <- menuItem("Aspects of Series", tabName = "Choose")
-forecasttab <- menuItem("Forecast", tabName = "Forecast")
+forecasttab <- menuItem("Simple Forecast", tabName = "SimpleForecast")
 
 
 sidebar <- dashboardSidebar(sidebarMenu(
@@ -68,16 +68,16 @@ body <- dashboardBody(tabItems(
     plotOutput("descriptor")
   ),
   tabItem(
-    tabName = "Forecast",
-    h2("Select a forecast model from the drop down box.  The options are Naive, Mean, Seasonal Naive, and All.
+    tabName = "SimpleForecast",
+    h2("Select a forecast model from the drop down box.  The options are Naive, Mean, Seasonal Naive, and Drift.
        A plot showing that forecast will then appear"),
     selectInput(
-      inputId = "Forecast",
+      inputId = "SimpleForecast",
       label = "Choose a component to see plotted",
-      choices = list("Naive", "Mean", "Seasonal Naive", "All"),
+      choices = list("Naive", "Mean", "Seasonal Naive", "Drift"),
       selected = 1
     ),
-    plotOutput("forecast")
+    plotOutput("simpleforecast")
   )
 ))
 
@@ -114,12 +114,12 @@ server <- function(input, output) {
   })
 
 
-  output$forecast <- renderPlot({
+  output$simpleforecast <- renderPlot({
     sales <- souvenirs %>%
       filter_index("1987 Jan" ~ "1991 Dec") %>%
       select(Sales)
 
-    if (input$Forecast == "Naive") {
+    if (input$SimpleForecast == "Naive") {
       sales_fit <- sales %>%
         model(
           `Naïve` = NAIVE(Sales)
@@ -138,7 +138,7 @@ server <- function(input, output) {
           title = "Forecasts for monthly souvenir sales"
         ) +
         guides(colour = guide_legend(title = "Forecast"))
-    } else if (input$Forecast == "Mean") {
+    } else if (input$SimpleForecast == "Mean") {
       sales_fit <- sales %>%
         model(
           Mean = MEAN(Sales)
@@ -157,7 +157,7 @@ server <- function(input, output) {
           title = "Forecasts for monthly souvenir sales"
         ) +
         guides(colour = guide_legend(title = "Forecast"))
-    } else if (input$Forecast == "Seasonal Naive") {
+    } else if (input$SimpleForecast == "Seasonal Naive") {
       sales_fit <- sales %>%
         model(
           `Seasonal naïve` = SNAIVE(Sales)
@@ -179,9 +179,7 @@ server <- function(input, output) {
     } else {
       sales_fit <- sales %>%
         model(
-          Mean = MEAN(Sales),
-          `Naïve` = NAIVE(Sales),
-          `Seasonal naïve` = SNAIVE(Sales)
+          Drift = NAIVE(Sales ~ drift())
         )
 
       sales_fc <- sales_fit %>% forecast(h = 24)
